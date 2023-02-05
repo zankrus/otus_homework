@@ -22,20 +22,20 @@ func Unpack(inputString string) (string, error) {
 		number, err := strconv.Atoi(s)
 
 		if err != nil {
-			//Если ошибка, значит символ не является числом
+			// Если ошибка, значит символ не является числом
 			result += s
 			isDigitLastChar = false
 		} else {
-			//Если без ошибки, значит символ - цифра
+			// Если без ошибки, значит символ - цифра
 			previousIndex := i - 1
 			if previousIndex < 0 {
 				return "", ErrInvalidString
 			}
-			if isDigitLastChar == true {
+			if isDigitLastChar {
 				return "", ErrInvalidString
 			}
 			if number == 0 {
-				//Удаляем последний символ
+				// Удаляем последний символ
 				result = result[0 : i-1]
 				continue
 			}
@@ -45,7 +45,6 @@ func Unpack(inputString string) (string, error) {
 			isDigitLastChar = true
 			continue
 		}
-
 	}
 	fmt.Println(result)
 	return result, nil
