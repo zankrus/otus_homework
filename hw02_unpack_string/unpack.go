@@ -2,9 +2,9 @@ package hw02unpackstring
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 var ErrInvalidString = errors.New("invalid string")
@@ -19,14 +19,15 @@ func Unpack(inputString string) (string, error) {
 	for i := 0; i < len(runedSourceString); i++ {
 		// Создаем переменную символа-строки
 		s := string(runedSourceString[i])
-		number, err := strconv.Atoi(s)
 
-		if err != nil {
-			// Если ошибка, значит символ не является числом
-			result += s
-			isDigitLastChar = false
-		} else {
-			// Если без ошибки, значит символ - цифра
+		if unicode.IsDigit(runedSourceString[i]) {
+
+			number, err := strconv.Atoi(s)
+
+			if err != nil {
+				return "", ErrInvalidString
+			}
+
 			previousIndex := i - 1
 			if previousIndex < 0 {
 				return "", ErrInvalidString
@@ -45,7 +46,10 @@ func Unpack(inputString string) (string, error) {
 			isDigitLastChar = true
 			continue
 		}
+
+		result += s
+		isDigitLastChar = false
+
 	}
-	fmt.Println(result)
 	return result, nil
 }
