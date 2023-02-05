@@ -14,11 +14,11 @@ func Unpack(inputString string) (string, error) {
 	var result string
 	var isDigitLastChar bool
 
-	for i := 0; i < len(inputString); i++ {
-		// Создаем переменную символа-строки
-		s := string(inputString[i])
+	runedSourceString := []rune(inputString)
 
-		// Пробуем перевести символ в цифру
+	for i := 0; i < len(runedSourceString); i++ {
+		// Создаем переменную символа-строки
+		s := string(runedSourceString[i])
 		number, err := strconv.Atoi(s)
 
 		if err != nil {
@@ -39,7 +39,7 @@ func Unpack(inputString string) (string, error) {
 				result = result[0 : i-1]
 				continue
 			}
-			previousChar := string(inputString[previousIndex])
+			previousChar := string(runedSourceString[previousIndex])
 			repeatedString := strings.Repeat(previousChar, number-1)
 			result += repeatedString
 			isDigitLastChar = true
