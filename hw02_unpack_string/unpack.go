@@ -19,11 +19,8 @@ func Unpack(inputString string) (string, error) {
 	for i := 0; i < len(runedSourceString); i++ {
 		// Создаем переменную символа-строки
 		s := string(runedSourceString[i])
-
 		if unicode.IsDigit(runedSourceString[i]) {
-
 			number, err := strconv.Atoi(s)
-
 			if err != nil {
 				return "", ErrInvalidString
 			}
@@ -49,7 +46,6 @@ func Unpack(inputString string) (string, error) {
 
 		result += s
 		isDigitLastChar = false
-
 	}
 	return result, nil
 }
