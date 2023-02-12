@@ -11,6 +11,16 @@ type Word struct {
 	count int
 }
 
+func countOfDashes(s string) int {
+	count := 0
+	for _, c := range s {
+		if c == '-' {
+			count++
+		}
+	}
+	return count
+}
+
 type WordSlice []Word
 
 func Top10(source string) []string {
@@ -30,7 +40,7 @@ func Top10(source string) []string {
 
 	// Считаем количество вхождений слов
 	for _, word := range words {
-		if word == "-" {
+		if word == "-" || countOfDashes(word) > 1 { // Тут можно было регулярку, но совсем нет времени вспоминать Т_Т
 			continue
 		}
 

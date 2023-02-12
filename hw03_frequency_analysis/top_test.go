@@ -44,10 +44,6 @@ var text = `Как видите, он  спускается  по  лестни�
 		В этот вечер...`
 
 func TestTop10(t *testing.T) {
-	t.Run("no words in empty string", func(t *testing.T) {
-		require.Len(t, Top10(""), 0)
-	})
-
 	t.Run("positive test", func(t *testing.T) {
 		if taskWithAsteriskIsCompleted {
 			expected := []string{
@@ -79,4 +75,53 @@ func TestTop10(t *testing.T) {
 			require.Equal(t, expected, Top10(text))
 		}
 	})
+}
+
+func TestDifferentLenOfSource(t *testing.T) {
+	tests := []lenTestCases{
+		{
+			source:      "Я короткий текст",
+			description: "Короткий текст меньше 10 слов",
+			expected:    3,
+		},
+		{
+			source:      "Я средний текст ровно на 10 слов без повторов ура",
+			description: "Короткий текст == 10 слов",
+			expected:    10,
+		},
+		{
+			source:      "",
+			description: "Пустая строка",
+			expected:    0,
+		},
+		{
+			source:      "- ,, . ! --",
+			description: "Строка из символов",
+			expected:    0,
+		},
+		{
+			source:      "приветик-пипетик, сам-то как ?",
+			description: "Строка с дефисами",
+			expected:    3,
+		},
+		{
+			source:      "Питон - топчик",
+			description: "Строка с тире",
+			expected:    2,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.description, func(t *testing.T) {
+			actualLen := len(Top10(tc.source))
+			require.Equal(t, tc.expected, actualLen, Top10(tc.source))
+		})
+	}
+}
+
+type lenTestCases struct {
+	source      string
+	description string
+	expected    int
 }
