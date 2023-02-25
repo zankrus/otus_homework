@@ -55,7 +55,7 @@ func (l *list) PushBack(v interface{}) *ListItem {
 		Value: v,
 	}
 	if l.tail != nil {
-		newItem.Prev = l.head
+		newItem.Prev = l.tail
 		l.tail.Next = newItem
 		l.tail = newItem
 	} else {
@@ -71,7 +71,30 @@ func (l *list) Remove(i *ListItem) {
 }
 
 func (l *list) MoveToFront(i *ListItem) {
+	//из середины
+	//из конца
+	//из начала
+	// prev начало ----- середина -- конец next
 
+	if l.head == i {
+		return
+	}
+	if l.tail == i {
+		//Конец списка теперь предыдущий элемент
+		l.tail = l.tail.Prev
+		l.tail.Next = nil
+
+		//Сдвигаем голову и добавлем ей предыдущий элемент
+		l.head.Prev = i
+
+		//Меняем указатель у головы
+		i.Next = l.head
+		i.Prev = nil
+
+		//Теперь голова это наш элемент
+		l.head = i
+		return
+	}
 }
 
 func NewList() List {
