@@ -95,6 +95,16 @@ func (l *list) MoveToFront(i *ListItem) {
 		l.head = i
 		return
 	}
+	i.Prev.Next = i.Next
+	i.Next.Prev = i.Prev
+
+	l.head.Prev = i
+	i.Next = l.head
+	i.Prev = nil
+
+	l.head = i
+
+	return
 }
 
 func NewList() List {
