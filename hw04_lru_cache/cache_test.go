@@ -9,6 +9,34 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestCacheSetGet(t *testing.T) {
+	c := NewCache(1)
+
+	// Кладем ключ, которого еще нет
+	first := c.Set("first", 100)
+	value, isExists := c.Get("first")
+
+	require.Equal(t, false, first)
+	require.Equal(t, value, 100)
+	require.True(t, isExists)
+
+	// Перезаписываем ключ
+	second := c.Set("first", 200)
+	value, isExists = c.Get("first")
+
+	require.Equal(t, true, second)
+	require.Equal(t, value, 200)
+	require.True(t, isExists)
+
+	//Превышаем капасити и проверяем, что старый ключ удален
+	trhird := c.Set("second", 400)
+	value, isExists = c.Get("first")
+
+	require.Equal(t, false, trhird)
+	require.Nil(t, value)
+	require.False(t, isExists)
+}
+
 func TestCache(t *testing.T) {
 	t.Run("empty cache", func(t *testing.T) {
 		c := NewCache(10)

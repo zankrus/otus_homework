@@ -78,9 +78,3 @@ func ReturnElements(l list) []int {
 	}
 	return elems
 }
-
-type TestCases struct {
-	value       list
-	description string
-	expected    int
-}
