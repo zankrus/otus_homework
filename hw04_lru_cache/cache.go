@@ -34,7 +34,6 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 	}
 
 	if overrun {
-
 		// Удаляем последний элемент из очереди
 		lastElement := l.queue.Back()
 
