@@ -17,18 +17,28 @@ type lruCache struct {
 	items    map[Key]*ListItem
 }
 
+type cacheItem struct {
+	key   Key
+	value interface{}
+}
+
 func (l *lruCache) Set(key Key, value interface{}) bool {
 	// Проверяем не превысили ли размер кэша
 	l.Lock()
 	defer l.Unlock()
 	overrun := l.capacity == l.queue.Len()
 
+	newValue := cacheItem{
+		key:   key,
+		value: value,
+	}
+
 	// Проверяем, если ли ключ в словаре
 	item, keyExists := l.items[key]
 
 	// Обновляем уже добавленный
 	if keyExists {
-		item.Value = value
+		item.Value = newValue
 		l.queue.MoveToFront(item)
 		return true
 	}
@@ -37,23 +47,19 @@ func (l *lruCache) Set(key Key, value interface{}) bool {
 		// Удаляем последний элемент из очереди
 		lastElement := l.queue.Back()
 
-		// Находим под каким ключом хранится значение
-		keyInMap := findKeyByValue(l.items, lastElement.Value)
-
 		// Удаляем из словаря и очереди
-
-		delete(l.items, keyInMap)
+		delete(l.items, lastElement.Value.(cacheItem).key)
 		l.queue.Remove(lastElement)
 
 		// Добавляем новый ключ
-		l.queue.PushFront(value)
+		l.queue.PushFront(newValue)
 		l.items[key] = l.queue.Front()
 
 		return false
 	}
 
 	// Добавляем новый ключ
-	l.queue.PushFront(value)
+	l.queue.PushFront(newValue)
 	l.items[key] = l.queue.Front()
 	return false
 }
@@ -66,7 +72,7 @@ func (l *lruCache) Get(key Key) (interface{}, bool) {
 
 	if keyExists {
 		l.queue.MoveToFront(item)
-		return item.Value, true
+		return item.Value.(cacheItem).value, true
 	}
 	return nil, false
 }
@@ -89,13 +95,4 @@ func NewCache(capacity int) Cache {
 		queue:    NewList(),
 		items:    make(map[Key]*ListItem, capacity),
 	}
-}
-
-func findKeyByValue(m map[Key]*ListItem, value interface{}) Key {
-	for k, v := range m {
-		if v.Value == value {
-			return k
-		}
-	}
-	return ""
 }
