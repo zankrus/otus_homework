@@ -49,3 +49,32 @@ func TestList(t *testing.T) {
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
 }
+
+func TestPushFrontEmptyList(t *testing.T) {
+	// Вставка в начало у пустого списка
+
+	// Prepare
+	l := list{
+		len:  0,
+		head: nil,
+		tail: nil,
+	}
+
+	// Act
+	l.PushFront(10)
+	elems := ReturnElements(l)
+
+	// Assert
+	require.Equal(t, []int{10}, elems)
+	require.Equal(t, l.head, l.tail)
+	require.Equal(t, 1, l.len)
+}
+
+func ReturnElements(l list) []int {
+	elems := make([]int, 0, l.Len())
+
+	for i := l.Front(); i != nil; i = i.Next {
+		elems = append(elems, i.Value.(int))
+	}
+	return elems
+}
