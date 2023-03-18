@@ -15,6 +15,7 @@ func Run(tasks []Task, n int, m int) error {
 		return ErrErrorsLimitExceeded
 	}
 
+	mt := sync.Mutex{}
 	wg := &sync.WaitGroup{}
 	errs := int64(0)
 
@@ -27,7 +28,7 @@ func Run(tasks []Task, n int, m int) error {
 
 	// Пихаем горутины-обработчики
 	for i := 0; i < n; i++ {
-		go worker(m, wg, errCh, taskCh, &errs)
+		go worker(m, wg, errCh, taskCh, &errs, &mt)
 	}
 
 	// Синхрониризуем каналы и пихаем таски в канал
@@ -57,6 +58,7 @@ func worker(
 	errCh chan struct{},
 	taskCh chan Task,
 	errs *int64,
+	mt *sync.Mutex,
 ) {
 	defer wg.Done()
 
@@ -71,10 +73,13 @@ func worker(
 			}
 
 			if err := task(); err != nil {
+				mt.Lock()
 				*errs++
 				if *errs == int64(m) {
 					errCh <- struct{}{}
+					close(errCh)
 				}
+				mt.Unlock()
 			}
 		}
 	}
