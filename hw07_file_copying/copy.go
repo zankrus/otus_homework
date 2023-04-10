@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"log"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -26,7 +26,6 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	if limit != 0 && limit < bufferSize {
 		bufferSize = limit
 	}
-	buffer := make([]byte, bufferSize)
 
 	// Открываем файл
 	file, err := os.Open(fromPath)
@@ -34,12 +33,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		return err
 	}
 	// Не забываем закрыть файл
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(file)
+	defer file.Close()
 
 	// Проводим валидации
 	fileInfo, err := file.Stat()
@@ -68,12 +62,8 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 
 	// Создаем файл, в который будем копировать
 	resFile, err := os.OpenFile(toPath, os.O_CREATE|os.O_RDWR, os.ModePerm)
-	defer func(resFile *os.File) {
-		err := resFile.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}(resFile)
+	defer resFile.Close() //nolint:staticcheck
+
 	if err != nil {
 		return err
 	}
@@ -94,19 +84,19 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	defer bar.Finish()
 
 	for {
-		bytesRead, _ := file.Read(buffer)
-		if bytesRead == 0 { // bytesRead будет равен 0 в конце файла.
-			break
-		}
-
 		// сразу писать в файл
-		written, err := resFile.Write(buffer)
+		written, err := io.CopyN(resFile, file, bufferSize)
+
+		bar.Add(int(written))
+
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			return err
 		}
-		bar.Add(written)
 
-		limitCount += int64(written)
+		limitCount += written
 		if limitCount == limit {
 			break
 		}
