@@ -5,23 +5,33 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
+
+	"github.com/cheggaaa/pb"
 )
 
 var (
 	ErrUnsupportedFile       = errors.New("unsupported file")
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
+	ErrEmptyPaths            = errors.New("empty path")
 )
 
 func Copy(fromPath, toPath string, offset, limit int64) error {
+	if fromPath == "" || toPath == "" {
+		return ErrEmptyPaths
+	}
 
 	// Выбираем размер буффера
 	bufferSize := int64(10)
+	if limit != 0 && limit < bufferSize {
+		bufferSize = limit
+	}
 	buffer := make([]byte, bufferSize)
 
 	// Открываем файл
 	file, err := os.Open(fromPath)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	// Не забываем закрыть файл
 	defer func(file *os.File) {
@@ -53,7 +63,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	// Создаем все папки для исходного файла
 	err = os.MkdirAll(filepath.Dir(toPath), os.ModePerm)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// Создаем файл, в который будем копировать
@@ -65,48 +75,43 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		}
 	}(resFile)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	// счетчик буффера
 	limitCount := int64(0)
-	lastIteration := false
+
+	// Прогресс бар инит
+	var expectedLen int64
+	expectedLen = fileInfo.Size() - offset
+
+	if expectedLen > limit && limit != 0 {
+		expectedLen = limit
+	}
+
+	bar := pb.StartNew(int(expectedLen))
+	bar.SetRefreshRate(time.Nanosecond)
+	defer bar.Finish()
 
 	for {
-
-		if limit != 0 {
-			if limit < bufferSize {
-				bufferSize = limit
-				buffer = make([]byte, bufferSize)
-				lastIteration = true
-			}
-			if limit < limitCount+bufferSize {
-				bufferSize = limit
-				buffer = make([]byte, limit-limitCount)
-				lastIteration = true
-			}
-		}
-
 		bytesRead, _ := file.Read(buffer)
 		if bytesRead == 0 { // bytesRead будет равен 0 в конце файла.
 			break
 		}
 
-		res := string(buffer)
-		log.Println(res)
-
 		// сразу писать в файл
-		_, err := resFile.Write(buffer)
+		written, err := resFile.Write(buffer)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
+		bar.Add(written)
 
-		if lastIteration {
+		limitCount += int64(written)
+		if limitCount == limit {
 			break
 		}
-
-		limitCount += int64(bufferSize)
 	}
 
+	bar.Finish()
 	return err
 }
