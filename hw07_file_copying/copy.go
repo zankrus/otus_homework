@@ -44,7 +44,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 
 	// Создаем файл, в который будем копировать
-	resFile, err := os.OpenFile(toPath, os.O_APPEND|os.O_CREATE|os.O_RDWR, os.ModePerm)
+	resFile, err := os.OpenFile(toPath, os.O_CREATE|os.O_RDWR, os.ModePerm)
 	defer func(resFile *os.File) {
 		err := resFile.Close()
 		if err != nil {
@@ -56,8 +56,16 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	}
 
 	// счетчик буффера
+	limitCount := int64(0)
+	lastIteration := false
 
 	for {
+		limitCount += int64(bufferSize)
+		if limitCount > limit {
+			buffer = make([]byte, limitCount-limit)
+			lastIteration = true
+		}
+
 		bytesRead, _ := file.Read(buffer)
 		if bytesRead == 0 { // bytesRead будет равен 0 в конце файла.
 			break
@@ -70,6 +78,10 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		_, err := resFile.Write(buffer)
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		if lastIteration {
+			break
 		}
 
 	}
