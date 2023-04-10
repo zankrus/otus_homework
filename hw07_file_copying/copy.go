@@ -15,7 +15,7 @@ var (
 func Copy(fromPath, toPath string, offset, limit int64) error {
 
 	// Выбираем размер буффера
-	bufferSize := 10
+	bufferSize := int64(10)
 	buffer := make([]byte, bufferSize)
 
 	// Открываем файл
@@ -60,10 +60,18 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	lastIteration := false
 
 	for {
-		limitCount += int64(bufferSize)
-		if limitCount > limit {
-			buffer = make([]byte, limitCount-limit)
-			lastIteration = true
+
+		if limit != 0 {
+			if limit < bufferSize {
+				bufferSize = limit
+				buffer = make([]byte, bufferSize)
+				lastIteration = true
+			}
+			if limit < limitCount+bufferSize {
+				bufferSize = limit
+				buffer = make([]byte, limit-limitCount)
+				lastIteration = true
+			}
 		}
 
 		bytesRead, _ := file.Read(buffer)
@@ -84,6 +92,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 			break
 		}
 
+		limitCount += int64(bufferSize)
 	}
 
 	return err
