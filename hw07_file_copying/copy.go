@@ -60,8 +60,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		return err
 	}
 
-	// Создаем файл, в который будем копировать
-	resFile, err := os.OpenFile(toPath, os.O_CREATE|os.O_RDWR, os.ModePerm)
+	resFile, err := os.Create(toPath)
 	defer resFile.Close() //nolint:staticcheck
 
 	if err != nil {
