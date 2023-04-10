@@ -31,6 +31,19 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		}
 	}(file)
 
+	// Проводим валидации
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if !fileInfo.Mode().IsRegular() {
+		return ErrUnsupportedFile
+	}
+
+	if fileInfo.Size() < offset {
+		return ErrOffsetExceedsFileSize
+	}
+
 	// Устанавливаем отступ
 	_, err = file.Seek(offset, 0)
 	if err != nil {
