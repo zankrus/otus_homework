@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 var (
@@ -15,7 +16,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 
 	// Выбираем размер буффера
 	bufferSize := 10
-	b := make([]byte, bufferSize)
+	buffer := make([]byte, bufferSize)
 
 	// Открываем файл
 	file, err := os.Open(fromPath)
@@ -36,19 +37,40 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 		return err
 	}
 
+	// Создаем все папки для исходного файла
+	err = os.MkdirAll(filepath.Dir(toPath), os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Создаем файл, в который будем копировать
+	resFile, err := os.OpenFile(toPath, os.O_APPEND|os.O_CREATE|os.O_RDWR, os.ModePerm)
+	defer func(resFile *os.File) {
+		err := resFile.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(resFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// счетчик буффера
 
 	for {
-		bytesRead, _ := file.Read(b)
+		bytesRead, _ := file.Read(buffer)
 		if bytesRead == 0 { // bytesRead будет равен 0 в конце файла.
 			break
 		}
 
-		// file[offset: limit] python
-
-		res := string(b)
+		res := string(buffer)
 		log.Println(res)
+
 		// сразу писать в файл
+		_, err := resFile.Write(buffer)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 	}
 
