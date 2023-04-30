@@ -46,7 +46,7 @@ func TestPipeline(t *testing.T) {
 			}
 			close(in)
 		}()
-
+		time.Sleep(time.Second)
 		result := make([]string, 0, 10)
 		start := time.Now()
 		for s := range ExecutePipeline(in, nil, stages...) {
@@ -59,6 +59,19 @@ func TestPipeline(t *testing.T) {
 			int64(elapsed),
 			// ~0.8s for processing 5 values in 4 stages (100ms every) concurrently
 			int64(sleepPerStage)*int64(len(stages)+len(data)-1)+int64(fault))
+	})
+
+	t.Run("empty stages case", func(t *testing.T) {
+		in := make(Bi)
+
+		var stages []Stage
+
+		result := make([]string, 0, 10)
+		for s := range ExecutePipeline(in, nil, stages...) {
+			result = append(result, s.(string))
+		}
+
+		require.Equal(t, result, []string{})
 	})
 
 	t.Run("done case", func(t *testing.T) {
