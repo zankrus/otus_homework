@@ -14,7 +14,7 @@ func TestRunCmd(t *testing.T) {
 	}{
 		{
 			name:         "Успешное выполнение",
-			command:      []string{"ls"},
+			command:      []string{"whoami"},
 			expectedCode: 0,
 		},
 		{
