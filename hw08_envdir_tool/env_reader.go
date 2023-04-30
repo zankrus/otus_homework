@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -37,7 +36,6 @@ func ReadDir(dir string) (Environment, error) {
 
 		// Читаем файл
 		fileName := file.Name()
-		fmt.Printf(" filename is : %v\n", fileName)
 
 		// Проверка на символ `=` в названии файла
 		if strings.Contains(fileName, "=") {
@@ -48,8 +46,6 @@ func ReadDir(dir string) (Environment, error) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf(" filenameBidy  is : %v\n", string(fileBody))
-
 		// Чистим файл от мусора
 		value := stringCleaner(string(fileBody))
 		if value == "" {
@@ -75,6 +71,5 @@ func stringCleaner(s string) string {
 	value = strings.TrimRight(value, "\t")
 	value = strings.TrimRight(value, "\n")
 	value = strings.TrimRight(value, " ")
-	fmt.Printf(" filenameBody after formating is : %v\n", value)
 	return value
 }

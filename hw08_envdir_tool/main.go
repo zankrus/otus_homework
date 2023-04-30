@@ -14,7 +14,6 @@ func main() {
 	}
 
 	dirPath := os.Args[1]
-	log.Printf("dir: %v\n", dirPath)
 
 	env, err := ReadDir(dirPath)
 	if err != nil {
@@ -22,7 +21,6 @@ func main() {
 	}
 
 	command := os.Args[2:]
-	log.Printf("command: %v\n", command)
 
-	RunCmd(command, env)
+	os.Exit(RunCmd(command, env))
 }

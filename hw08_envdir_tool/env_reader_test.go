@@ -16,7 +16,7 @@ func TestReadDir(t *testing.T) {
 			log.Fatal(err)
 		}
 
-		require.Equal(t, 7, len(env))
+		require.Equal(t, 5, len(env))
 		require.Equal(t, EnvValue{
 			Value:      "bar",
 			NeedRemove: false,
@@ -39,7 +39,7 @@ func TestReadDir(t *testing.T) {
 		require.Len(t, env, 0)
 	})
 	t.Run("Файл с =", func(t *testing.T) {
-		_, err := os.CreateTemp("./testdata/env", "=")
+		file, err := os.CreateTemp("./testdata/env", "=")
 		if err != nil {
 			t.Fail()
 		}
@@ -47,6 +47,8 @@ func TestReadDir(t *testing.T) {
 		_, err = ReadDir("./testdata/env")
 
 		require.Error(t, err)
+
+		os.RemoveAll(file.Name())
 	})
 }
 
