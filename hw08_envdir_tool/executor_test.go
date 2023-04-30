@@ -41,7 +41,6 @@ func TestPrepareEnvs(t *testing.T) {
 
 		require.Len(t, res, 1)
 		require.Equal(t, []string{"user=Ro"}, res)
-
 	})
 
 	t.Run("c заменой", func(t *testing.T) {
@@ -56,7 +55,6 @@ func TestPrepareEnvs(t *testing.T) {
 
 		require.Len(t, res, 1)
 		require.Equal(t, []string{"user=clone"}, res)
-
 	})
 
 	t.Run("c удалением", func(t *testing.T) {
@@ -71,6 +69,5 @@ func TestPrepareEnvs(t *testing.T) {
 
 		require.Len(t, res, 0)
 		require.Equal(t, []string{}, res)
-
 	})
 }

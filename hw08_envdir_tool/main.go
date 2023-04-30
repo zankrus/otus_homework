@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	argLength := len(os.Args[1:])
 
 	if argLength < 3 {

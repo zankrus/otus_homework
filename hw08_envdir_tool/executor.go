@@ -18,8 +18,9 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	default:
 		args = cmd[1:]
 	}
+	commandName := cmd[0]
 
-	command := exec.Command(cmd[0], args...)
+	command := exec.Command(commandName, args...)
 	command.Env = prepareEnvs(osEnv, env)
 	command.Stdout = os.Stdout
 	command.Stdin = os.Stdin
@@ -39,7 +40,6 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 }
 
 func prepareEnvs(osEnv []string, editions Environment) []string {
-
 	envs := make(map[string]string)
 
 	for i := range osEnv {

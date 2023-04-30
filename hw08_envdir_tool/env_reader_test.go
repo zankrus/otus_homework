@@ -1,21 +1,19 @@
 package main
 
 import (
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require" //nolint
 	"log"
 	"os"
-	"testing"
+	"testing" //nolint
 )
 
 func TestReadDir(t *testing.T) {
 	t.Run("Директория с файлами", func(t *testing.T) {
-
 		testDir := "./testdata/env"
 		env, err := ReadDir(testDir)
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		require.Equal(t, 5, len(env))
 		require.Equal(t, EnvValue{
 			Value:      "bar",
@@ -53,38 +51,27 @@ func TestReadDir(t *testing.T) {
 }
 
 func TestStringCleaner(t *testing.T) {
+	const expected = "some"
 	t.Run("Пробел вначале", func(t *testing.T) {
-
 		testString := " some"
 		result := stringCleaner(testString)
-		expected := "some"
 		require.Equal(t, expected, result)
-
 	})
 	t.Run("Пробел в конце", func(t *testing.T) {
-
 		testString := "some "
 		result := stringCleaner(testString)
-		expected := "some"
 		require.Equal(t, expected, result)
-
 	})
 
 	t.Run("Текст в две строки", func(t *testing.T) {
-
 		testString := "some\n some again \n"
 		result := stringCleaner(testString)
-		expected := "some"
 		require.Equal(t, expected, result)
-
 	})
 
 	t.Run("Текст с табуляцией ", func(t *testing.T) {
-
 		testString := "some\t"
 		result := stringCleaner(testString)
-		expected := "some"
 		require.Equal(t, expected, result)
-
 	})
 }
