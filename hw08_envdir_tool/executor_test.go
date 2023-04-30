@@ -19,7 +19,7 @@ func TestRunCmd(t *testing.T) {
 		},
 		{
 			name:         "Ошибка",
-			command:      []string{"ls", "ls"},
+			command:      []string{"whoami", "ls"},
 			expectedCode: 1,
 		},
 	}
