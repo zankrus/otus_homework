@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"errors"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -40,13 +41,18 @@ func ReadDir(dir string) (Environment, error) {
 		if strings.Contains(fileName, "=") {
 			return nil, errors.New("File name \"" + fileName + "\" contains \"=\"")
 		}
-
-		fileBody, err := os.ReadFile(filepath.Join(dir, file.Name()))
+		file, err := os.Open(dir + "/" + file.Name())
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
+
+		scanner := bufio.NewScanner(file)
+		scanner.Scan()
+
+		content := bytes.Replace(scanner.Bytes(), []byte{0x00}, []byte("\n"), 1)
+		value := stringCleaner(string(bytes.TrimRight(content, " \t\r")))
+
 		// Чистим файл от мусора
-		value := stringCleaner(string(fileBody))
 		if value == "" {
 			env[fileName] = EnvValue{
 				Value:      "",
@@ -69,6 +75,7 @@ func stringCleaner(s string) string {
 	value = strings.TrimLeft(value, " ")
 	value = strings.TrimRight(value, "\t")
 	value = strings.TrimRight(value, "\n")
+	value = strings.TrimRight(value, "\r")
 	value = strings.TrimRight(value, " ")
 	return value
 }
