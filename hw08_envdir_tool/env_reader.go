@@ -50,7 +50,7 @@ func ReadDir(dir string) (Environment, error) {
 		scanner.Scan()
 
 		content := bytes.Replace(scanner.Bytes(), []byte{0x00}, []byte("\n"), 1)
-		value := stringCleaner(string(bytes.TrimRight(content, " \t\r")))
+		value := string(bytes.TrimRight(content, " \t\r"))
 
 		// Чистим файл от мусора
 		if value == "" {
@@ -74,7 +74,6 @@ func stringCleaner(s string) string {
 	value := strings.Split(s, "\n")[0]
 	value = strings.TrimLeft(value, " ")
 	value = strings.TrimRight(value, "\t")
-	value = strings.TrimRight(value, "\n")
 	value = strings.TrimRight(value, "\r")
 	value = strings.TrimRight(value, " ")
 	return value
