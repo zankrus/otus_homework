@@ -12,6 +12,10 @@ type ValidationError struct {
 	Err   error
 }
 
+func (v ValidationError) Error() string {
+	return fmt.Sprintf("%v ошибка в поле %s", v.Err, v.Field)
+}
+
 const validateTagKey = "validate"
 
 type ValidationErrors []ValidationError
@@ -20,48 +24,72 @@ var (
 	errNotAStruct = errors.New("переданный объект не структура")
 )
 
+var (
+	ErrLen            = errors.New("length")
+	ErrRegex          = errors.New("regex")
+	ErrMin            = errors.New("greater")
+	ErrMax            = errors.New("less")
+	ErrIn             = errors.New("lots of")
+	ErrInvalidValues  = errors.New("invalid values")
+	ErrExpectedStruct = errors.New("expected a struct")
+)
+
 func (v ValidationErrors) Error() string {
-	panic("implement me")
+	b := strings.Builder{}
+	for _, e := range v {
+		b.WriteString(e.Err.Error())
+		b.WriteRune('\n')
+	}
+	return b.String()
 }
 
 func Validate(v interface{}) error {
 	val := reflect.ValueOf(v)
 	objType := val.Type()
 
-	//valErrors := make(ValidationErrors, 0)
+	valErrors := make(ValidationErrors, 0)
 
 	if objType.Kind() != reflect.Struct {
 		return errNotAStruct
 	}
 
 	for i := 0; i < val.NumField(); i++ {
-
+		fieldValue := val.Field(i)
 		field := objType.Field(i)
 		fullTag, ok := field.Tag.Lookup(validateTagKey)
-
-		//TODO: удалить принты отладочные
-		fmt.Printf("field value is  %v ,  fulltag is %s \n", val.Field(i), fullTag)
-		fmt.Printf("field is validating : %v \n", ok)
-		fmt.Println("")
 
 		if !ok {
 			continue
 		}
 
 		tags := strings.Split(fullTag, "|")
-		for _, tag := range tags {
-			fmt.Println("")
-			fmt.Printf("tag is : %v", tag)
+
+		valErrors = checkErrors(field.Name, tags, fieldValue)
+
+		if len(valErrors) > 0 {
+			return valErrors
 		}
 	}
-
-	//TODO: удалить принты отладочные
-	fmt.Println(val)
-	fmt.Println(objType)
-
 	return nil
 }
 
-//func intValidator(v int, expValues []int) error {
-//
-//}
+func checkErrors(fName string, fTags []string, fValue reflect.Value) ValidationErrors {
+
+	fmt.Println("***Функция checkErrors***")
+	fmt.Printf("Имя поля  %v \n", fName)
+	fmt.Printf("Теги поля  %v \n", fTags)
+	fmt.Printf("Велью поля  %v \n", fValue)
+	fmt.Printf("Тип поля  %v \n", fValue.Kind())
+	fmt.Println("")
+
+	switch fValue.Kind() {
+	case reflect.Int:
+
+	case reflect.String:
+
+	case reflect.Slice:
+
+	}
+
+	return nil
+}

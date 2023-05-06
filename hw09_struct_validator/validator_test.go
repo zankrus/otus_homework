@@ -36,7 +36,7 @@ type (
 		Body string `json:"omitempty"`
 	}
 	Custom struct {
-		Code    int    `validate:"in:200,404,500"`
+		Code    int    `validate:"min:300"`
 		BodyStr string `validate:"len:36|regexp:^\\w+@\\w+\\.\\w+$"`
 	}
 )
