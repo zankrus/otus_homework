@@ -3,6 +3,7 @@ package hw09structvalidator
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -34,26 +35,40 @@ type (
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
 	}
+	Custom struct {
+		Code    int    `validate:"in:200,404,500"`
+		BodyStr string `validate:"len:36|regexp:^\\w+@\\w+\\.\\w+$"`
+	}
 )
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		in          interface{}
 		expectedErr error
+		desc        string
 	}{
 		{
-			// Place your code here.
+			in: Custom{
+				Code:    200,
+				BodyStr: "{\"Result\" : true}",
+			},
+			expectedErr: nil,
+			desc:        "Пустая структура",
 		},
 		// ...
 		// Place your code here.
 	}
 
-	for i, tt := range tests {
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%v", tt.desc), func(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
 			// Place your code here.
+
+			err := Validate(tt.in)
+			require.Equal(t, tt.expectedErr, err)
+
 			_ = tt
 		})
 	}
