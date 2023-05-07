@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -21,17 +22,16 @@ const validateTagKey = "validate"
 type ValidationErrors []ValidationError
 
 var (
-	errNotAStruct = errors.New("переданный объект не структура")
-)
-
-var (
-	ErrLen            = errors.New("length")
-	ErrRegex          = errors.New("regex")
-	ErrMin            = errors.New("greater")
-	ErrMax            = errors.New("less")
-	ErrIn             = errors.New("lots of")
-	ErrInvalidValues  = errors.New("invalid values")
-	ErrExpectedStruct = errors.New("expected a struct")
+	errNotAStruct          = errors.New("переданный объект не структура")
+	errMissmatchTagAndType = errors.New("тэг недопустим для типа")
+	errBrokenTag           = errors.New("невалидный тэг")
+	ErrMin                 = errors.New("значения меньше допустимого")
+	ErrMax                 = errors.New("less")
+	ErrIn                  = errors.New("lots of")
+	ErrInvalidValues       = errors.New("invalid values")
+	ErrExpectedStruct      = errors.New("expected a struct")
+	ErrLen                 = errors.New("length")
+	ErrRegex               = errors.New("regex")
 )
 
 func (v ValidationErrors) Error() string {
@@ -64,7 +64,7 @@ func Validate(v interface{}) error {
 
 		tags := strings.Split(fullTag, "|")
 
-		valErrors = checkErrors(field.Name, tags, fieldValue)
+		valErrors = checkErrors(field.Name, tags, fieldValue, valErrors)
 
 		if len(valErrors) > 0 {
 			return valErrors
@@ -73,7 +73,9 @@ func Validate(v interface{}) error {
 	return nil
 }
 
-func checkErrors(fName string, fTags []string, fValue reflect.Value) ValidationErrors {
+func checkErrors(fName string, fTags []string, fValue reflect.Value, errContainer []ValidationError) ValidationErrors {
+	var errs []error
+	var newValErrs = errContainer
 
 	fmt.Println("***Функция checkErrors***")
 	fmt.Printf("Имя поля  %v \n", fName)
@@ -84,12 +86,65 @@ func checkErrors(fName string, fTags []string, fValue reflect.Value) ValidationE
 
 	switch fValue.Kind() {
 	case reflect.Int:
-
+		errs = validateByTag(fTags, fValue)
+		fmt.Printf("Ошибки в поле  %v : %v \n", fName, errs)
 	case reflect.String:
 
 	case reflect.Slice:
+		for i := 0; i < fValue.Len(); i++ {
+			newValErrs = checkErrors(fName, fTags, fValue.Index(i), newValErrs)
+		}
 
 	}
+	if len(errs) > 0 {
+		for _, err := range errs {
+			newValErrs = append(newValErrs, ValidationError{fName, err})
+		}
+	}
 
-	return nil
+	return newValErrs
+
+}
+
+func validateByTag(tags []string, value reflect.Value) []error {
+	var errs []error
+	for _, tag := range tags {
+		var err error
+		splitedTag := strings.Split(tag, ":")
+		if len(splitedTag) != 2 {
+			err = errBrokenTag
+			continue
+		}
+		tagName := splitedTag[0]
+		tagValue := splitedTag[1]
+
+		fmt.Println("***Функция validateByTag***")
+		fmt.Printf("tagN %v \n", tagName)
+		fmt.Printf("tagV %v \n", tagValue)
+
+		switch tagName {
+
+		case "min":
+			if value.Kind() != reflect.Int {
+				err = errMissmatchTagAndType
+				continue
+			}
+			min, errIn := strconv.Atoi(tagValue)
+			if errIn != nil {
+				err = errIn
+				continue
+			}
+			if int(value.Int()) < min {
+				errIn = ErrMin
+				err = errIn
+			}
+
+		}
+
+		if err != nil {
+			errs = append(errs, err)
+		}
+
+	}
+	return errs
 }
