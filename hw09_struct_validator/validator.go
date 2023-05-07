@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -26,12 +27,10 @@ var (
 	errMissmatchTagAndType = errors.New("тэг недопустим для типа")
 	errBrokenTag           = errors.New("невалидный тэг")
 	ErrMin                 = errors.New("значения меньше допустимого")
-	ErrMax                 = errors.New("less")
-	ErrIn                  = errors.New("lots of")
-	ErrInvalidValues       = errors.New("invalid values")
-	ErrExpectedStruct      = errors.New("expected a struct")
-	ErrLen                 = errors.New("length")
-	ErrRegex               = errors.New("regex")
+	ErrMax                 = errors.New("значения больше допустимого")
+	ErrIn                  = errors.New("значение не входит в список допустимых")
+	ErrLen                 = errors.New("допустима длина превышена")
+	ErrRegex               = errors.New("строка не подходит под регулярное выражение")
 )
 
 func (v ValidationErrors) Error() string {
@@ -89,7 +88,8 @@ func checkErrors(fName string, fTags []string, fValue reflect.Value, errContaine
 		errs = validateByTag(fTags, fValue)
 		fmt.Printf("Ошибки в поле  %v : %v \n", fName, errs)
 	case reflect.String:
-
+		errs = validateByTag(fTags, fValue)
+		fmt.Printf("Ошибки в поле  %v : %v \n", fName, errs)
 	case reflect.Slice:
 		for i := 0; i < fValue.Len(); i++ {
 			newValErrs = checkErrors(fName, fTags, fValue.Index(i), newValErrs)
@@ -125,11 +125,14 @@ func validateByTag(tags []string, value reflect.Value) []error {
 		switch tagName {
 
 		case "min":
-			err = limitCompare(value, tagValue, "min")
+			err = compareInt(value, tagValue, "min")
 		case "max":
-			err = limitCompare(value, tagValue, "max")
+			err = compareInt(value, tagValue, "max")
+		case "len":
+			err = lenCompare(value, tagValue)
+		case "regexp":
+			err = regexpCompare(value, tagValue)
 		}
-
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -138,7 +141,34 @@ func validateByTag(tags []string, value reflect.Value) []error {
 	return errs
 }
 
-func limitCompare(value reflect.Value, limit, operator string) error {
+func lenCompare(value reflect.Value, limit string) error {
+	if value.Kind() != reflect.String {
+		return errMissmatchTagAndType
+	}
+	limV, err := strconv.Atoi(limit)
+	if err != nil {
+		return err
+	}
+	if len(value.String()) > limV {
+		return ErrLen
+	}
+	return nil
+}
+func regexpCompare(value reflect.Value, template string) error {
+	if value.Kind() != reflect.String {
+		return errMissmatchTagAndType
+	}
+	rx, err := regexp.Compile(template)
+	if err != nil {
+		return err
+	}
+	if !rx.MatchString(value.String()) {
+		return ErrRegex
+	}
+	return nil
+}
+
+func compareInt(value reflect.Value, limit, operator string) error {
 	if value.Kind() != reflect.Int {
 		return errMissmatchTagAndType
 	}
@@ -159,5 +189,5 @@ func limitCompare(value reflect.Value, limit, operator string) error {
 	default:
 		return errBrokenTag
 	}
-	return err
+	return nil
 }

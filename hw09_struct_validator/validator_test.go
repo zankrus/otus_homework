@@ -37,7 +37,8 @@ type (
 	}
 	Custom struct {
 		Code    int    `validate:"min:300|max:500"`
-		BodyStr string `validate:"len:36|regexp:^\\w+@\\w+\\.\\w+$"`
+		BodyStr string `validate:"len:522"`
+		Email   string `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
 	}
 )
 
@@ -49,8 +50,9 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			in: Custom{
-				Code:    600,
+				Code:    400,
 				BodyStr: "{\"Result\" : true}",
+				Email:   "means@noth.io",
 			},
 			expectedErr: nil,
 			desc:        "Тест минимального тэга",
