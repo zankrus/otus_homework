@@ -36,8 +36,8 @@ type (
 		Body string `json:"omitempty"`
 	}
 	Custom struct {
-		Code    int    `validate:"min:300|max:500"`
-		BodyStr string `validate:"len:522"`
+		Code    int    `validate:"min:200|max:500|in:200,404,500"`
+		BodyStr string `validate:"len:522|in:admin,stuff"`
 		Email   string `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
 	}
 )
@@ -50,8 +50,8 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			in: Custom{
-				Code:    400,
-				BodyStr: "{\"Result\" : true}",
+				Code:    500,
+				BodyStr: "admin1",
 				Email:   "means@noth.io",
 			},
 			expectedErr: nil,

@@ -129,9 +129,11 @@ func validateByTag(tags []string, value reflect.Value) []error {
 		case "max":
 			err = compareInt(value, tagValue, "max")
 		case "len":
-			err = lenCompare(value, tagValue)
+			err = compareLen(value, tagValue)
 		case "regexp":
-			err = regexpCompare(value, tagValue)
+			err = compareRegExp(value, tagValue)
+		case "in":
+			err = compareIn(value, tagValue)
 		}
 		if err != nil {
 			errs = append(errs, err)
@@ -141,7 +143,37 @@ func validateByTag(tags []string, value reflect.Value) []error {
 	return errs
 }
 
-func lenCompare(value reflect.Value, limit string) error {
+func compareIn(value reflect.Value, expectedValues string) error {
+	expValuesList := strings.Split(expectedValues, ",")
+	err := ErrIn
+
+	for _, expValue := range expValuesList {
+		switch value.Kind() {
+		case reflect.Int:
+			expValueInt, errInner := strconv.Atoi(expValue)
+			if errInner != nil {
+				err = errInner
+			}
+			if expValueInt == int(value.Int()) {
+				err = nil
+				break
+			}
+
+		case reflect.String:
+			if expValue == value.String() {
+				err = nil
+				break
+			}
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func compareLen(value reflect.Value, limit string) error {
 	if value.Kind() != reflect.String {
 		return errMissmatchTagAndType
 	}
@@ -154,7 +186,7 @@ func lenCompare(value reflect.Value, limit string) error {
 	}
 	return nil
 }
-func regexpCompare(value reflect.Value, template string) error {
+func compareRegExp(value reflect.Value, template string) error {
 	if value.Kind() != reflect.String {
 		return errMissmatchTagAndType
 	}
