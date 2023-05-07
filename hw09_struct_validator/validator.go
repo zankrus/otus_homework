@@ -125,20 +125,9 @@ func validateByTag(tags []string, value reflect.Value) []error {
 		switch tagName {
 
 		case "min":
-			if value.Kind() != reflect.Int {
-				err = errMissmatchTagAndType
-				continue
-			}
-			min, errIn := strconv.Atoi(tagValue)
-			if errIn != nil {
-				err = errIn
-				continue
-			}
-			if int(value.Int()) < min {
-				errIn = ErrMin
-				err = errIn
-			}
-
+			err = limitCompare(value, tagValue, "min")
+		case "max":
+			err = limitCompare(value, tagValue, "max")
 		}
 
 		if err != nil {
@@ -147,4 +136,28 @@ func validateByTag(tags []string, value reflect.Value) []error {
 
 	}
 	return errs
+}
+
+func limitCompare(value reflect.Value, limit, operator string) error {
+	if value.Kind() != reflect.Int {
+		return errMissmatchTagAndType
+	}
+	limV, err := strconv.Atoi(limit)
+	if err != nil {
+		return err
+	}
+
+	switch operator {
+	case "min":
+		if int(value.Int()) < limV {
+			return ErrMin
+		}
+	case "max":
+		if int(value.Int()) > limV {
+			return ErrMax
+		}
+	default:
+		return errBrokenTag
+	}
+	return err
 }

@@ -36,7 +36,7 @@ type (
 		Body string `json:"omitempty"`
 	}
 	Custom struct {
-		Code    int    `validate:"min:300"`
+		Code    int    `validate:"min:300|max:500"`
 		BodyStr string `validate:"len:36|regexp:^\\w+@\\w+\\.\\w+$"`
 	}
 )
@@ -49,11 +49,11 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			in: Custom{
-				Code:    200,
+				Code:    600,
 				BodyStr: "{\"Result\" : true}",
 			},
 			expectedErr: nil,
-			desc:        "Пустая структура",
+			desc:        "Тест минимального тэга",
 		},
 		// ...
 		// Place your code here.
