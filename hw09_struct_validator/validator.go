@@ -15,7 +15,7 @@ type ValidationError struct {
 }
 
 func (v ValidationError) Error() string {
-	return fmt.Sprintf("%v ошибка в поле %s", v.Err, v.Field)
+	return v.Err.Error()
 }
 
 const validateTagKey = "validate"
@@ -74,8 +74,7 @@ func Validate(v interface{}) error {
 
 func checkErrors(fName string, fTags []string, fValue reflect.Value, errContainer []ValidationError) ValidationErrors {
 	var errs []error
-	var newValErrs = errContainer
-
+	newValErrs := errContainer
 	fmt.Println("***Функция checkErrors***")
 	fmt.Printf("Имя поля  %v \n", fName)
 	fmt.Printf("Теги поля  %v \n", fTags)
@@ -83,7 +82,7 @@ func checkErrors(fName string, fTags []string, fValue reflect.Value, errContaine
 	fmt.Printf("Тип поля  %v \n", fValue.Kind())
 	fmt.Println("")
 
-	switch fValue.Kind() {
+	switch fValue.Kind() { //nolint:exhaustive
 	case reflect.Int:
 		errs = validateByTag(fTags, fValue)
 		fmt.Printf("Ошибки в поле  %v : %v \n", fName, errs)
@@ -94,7 +93,6 @@ func checkErrors(fName string, fTags []string, fValue reflect.Value, errContaine
 		for i := 0; i < fValue.Len(); i++ {
 			newValErrs = checkErrors(fName, fTags, fValue.Index(i), newValErrs)
 		}
-
 	}
 	if len(errs) > 0 {
 		for _, err := range errs {
@@ -103,7 +101,6 @@ func checkErrors(fName string, fTags []string, fValue reflect.Value, errContaine
 	}
 
 	return newValErrs
-
 }
 
 func validateByTag(tags []string, value reflect.Value) []error {
@@ -112,7 +109,7 @@ func validateByTag(tags []string, value reflect.Value) []error {
 		var err error
 		splitedTag := strings.Split(tag, ":")
 		if len(splitedTag) != 2 {
-			err = errBrokenTag
+			errs = append(errs, errBrokenTag)
 			continue
 		}
 		tagName := splitedTag[0]
@@ -123,7 +120,6 @@ func validateByTag(tags []string, value reflect.Value) []error {
 		fmt.Printf("tagV %v \n", tagValue)
 
 		switch tagName {
-
 		case "min":
 			err = compareInt(value, tagValue, "min")
 		case "max":
@@ -138,7 +134,6 @@ func validateByTag(tags []string, value reflect.Value) []error {
 		if err != nil {
 			errs = append(errs, err)
 		}
-
 	}
 	return errs
 }
@@ -148,7 +143,7 @@ func compareIn(value reflect.Value, expectedValues string) error {
 	err := ErrIn
 
 	for _, expValue := range expValuesList {
-		switch value.Kind() {
+		switch value.Kind() { //nolint:exhaustive
 		case reflect.Int:
 			expValueInt, errInner := strconv.Atoi(expValue)
 			if errInner != nil {
@@ -164,6 +159,8 @@ func compareIn(value reflect.Value, expectedValues string) error {
 				err = nil
 				break
 			}
+		default:
+			continue
 		}
 	}
 	if err != nil {
@@ -186,6 +183,7 @@ func compareLen(value reflect.Value, limit string) error {
 	}
 	return nil
 }
+
 func compareRegExp(value reflect.Value, template string) error {
 	if value.Kind() != reflect.String {
 		return errMissmatchTagAndType

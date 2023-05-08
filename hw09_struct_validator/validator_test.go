@@ -3,8 +3,10 @@ package hw09structvalidator
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stretchr/testify/require"
+	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type UserRole string
@@ -36,42 +38,96 @@ type (
 		Body string `json:"omitempty"`
 	}
 	Custom struct {
-		Code    int    `validate:"min:200|max:500|in:200,404,500"`
-		BodyStr string `validate:"len:522|in:admin,stuff"`
-		Email   string `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
+		Code       int    `validate:"min:200|max:500"`
+		CodeIn     int    `validate:"in:200,404,500"`
+		BodyStrLen string `validate:"len:5"`
+		BodyStrIn  string `validate:"in:pupa,lupa"`
+
+		Email string `validate:"regexp:^\\w+@\\w+\\.\\w+$"`
 	}
 )
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
 		in          interface{}
-		expectedErr error
+		expectedErr []error
 		desc        string
 	}{
 		{
-			in: Custom{
-				Code:    500,
-				BodyStr: "admin1",
-				Email:   "means@noth.io",
+			in: User{
+				ID:     "101",
+				Name:   "HW zavupa",
+				Age:    20,
+				Email:  "pupa@lupa.ru",
+				Role:   "admin",
+				Phones: []string{"00000000000", "11111111111"},
+				meta:   nil,
 			},
 			expectedErr: nil,
-			desc:        "Тест минимального тэга",
+			desc:        "positive",
 		},
-		// ...
-		// Place your code here.
+		{
+			in: Token{
+				Header:    []byte("nil"),
+				Payload:   []byte("nil"),
+				Signature: []byte("nil"),
+			},
+			expectedErr: nil,
+			desc:        "positive",
+		},
+		{
+			in: Response{
+				Code: 200,
+				Body: "{\"Result\" : true}",
+			},
+			expectedErr: nil,
+			desc:        "positive",
+		},
+		{
+			in: Custom{
+				Code:       499,
+				CodeIn:     200,
+				BodyStrLen: "admin",
+				BodyStrIn:  "pupa",
+				Email:      "ro@super.ru",
+			},
+			expectedErr: nil,
+			desc:        "positive",
+		},
+		{
+			in: Custom{
+				Code:       600,
+				BodyStrLen: "admin",
+				Email:      "ro@super.ru",
+			},
+			expectedErr: []error{ErrMax},
+			desc:        "negative",
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("%v", tt.desc), func(t *testing.T) {
-			tt := tt
-			t.Parallel()
 
-			// Place your code here.
+		switch tt.desc {
+		case "positive":
+			t.Run(fmt.Sprintf("%v", reflect.TypeOf(tt.in)), func(t *testing.T) {
+				tt := tt
+				err := Validate(tt.in)
+				require.NoError(t, err)
 
-			err := Validate(tt.in)
-			require.Equal(t, tt.expectedErr, err)
+			})
+		case "negative":
+			t.Run(fmt.Sprintf("%v", reflect.TypeOf(tt.in)), func(t *testing.T) {
+				tt := tt
+				err := Validate(tt.in)
+				var valErr ValidationErrors
 
-			_ = tt
-		})
+				require.ErrorAs(t, err, &valErr)
+
+				for i, e := range tt.expectedErr {
+					require.ErrorIs(t, valErr[i], e)
+
+				}
+			})
+		}
 	}
 }
