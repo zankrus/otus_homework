@@ -1,17 +1,209 @@
 package hw09structvalidator
 
+import (
+	"errors"
+	"reflect"
+	"regexp"
+	"strconv"
+	"strings"
+)
+
 type ValidationError struct {
 	Field string
 	Err   error
 }
 
+func (v ValidationError) Error() string {
+	return v.Err.Error()
+}
+
+const validateTagKey = "validate"
+
 type ValidationErrors []ValidationError
 
+var (
+	ErrNotAStruct          = errors.New("переданный объект не структура")
+	ErrMissmatchTagAndType = errors.New("тэг недопустим для типа")
+	ErrBrokenTag           = errors.New("невалидный тэг")
+	ErrMin                 = errors.New("значения меньше допустимого")
+	ErrMax                 = errors.New("значения больше допустимого")
+	ErrIn                  = errors.New("значение не входит в список допустимых")
+	ErrLen                 = errors.New("допустима длина превышена")
+	ErrRegex               = errors.New("строка не подходит под регулярное выражение")
+)
+
 func (v ValidationErrors) Error() string {
-	panic("implement me")
+	b := strings.Builder{}
+	for _, e := range v {
+		b.WriteString(e.Err.Error())
+		b.WriteRune('\n')
+	}
+	return b.String()
 }
 
 func Validate(v interface{}) error {
-	// Place your code here.
+	val := reflect.ValueOf(v)
+	objType := val.Type()
+
+	valErrors := make(ValidationErrors, 0)
+
+	if objType.Kind() != reflect.Struct {
+		return ErrNotAStruct
+	}
+
+	for i := 0; i < val.NumField(); i++ {
+		fieldValue := val.Field(i)
+		field := objType.Field(i)
+		fullTag, ok := field.Tag.Lookup(validateTagKey)
+
+		if !ok {
+			continue
+		}
+
+		tags := strings.Split(fullTag, "|")
+
+		valErrors = checkErrors(field.Name, tags, fieldValue, valErrors)
+	}
+	if len(valErrors) > 0 {
+		return valErrors
+	}
+	return nil
+}
+
+func checkErrors(fName string, fTags []string, fValue reflect.Value, errContainer []ValidationError) ValidationErrors {
+	var errs []error
+	newValErrs := errContainer
+
+	switch fValue.Kind() { //nolint:exhaustive
+	case reflect.Int:
+		errs = validateByTag(fTags, fValue)
+	case reflect.String:
+		errs = validateByTag(fTags, fValue)
+	case reflect.Slice:
+		for i := 0; i < fValue.Len(); i++ {
+			newValErrs = checkErrors(fName, fTags, fValue.Index(i), newValErrs)
+		}
+	}
+	if len(errs) > 0 {
+		for _, err := range errs {
+			newValErrs = append(newValErrs, ValidationError{fName, err})
+		}
+	}
+
+	return newValErrs
+}
+
+func validateByTag(tags []string, value reflect.Value) []error {
+	var errs []error
+	for _, tag := range tags {
+		var err error
+		splitedTag := strings.Split(tag, ":")
+		tagName := splitedTag[0]
+		tagValue := splitedTag[1]
+		if len(splitedTag) != 2 || tagValue == "" {
+			errs = append(errs, ErrBrokenTag)
+			continue
+		}
+
+		switch tagName {
+		case "min":
+			err = compareInt(value, tagValue, "min")
+		case "max":
+			err = compareInt(value, tagValue, "max")
+		case "len":
+			err = compareLen(value, tagValue)
+		case "regexp":
+			err = compareRegExp(value, tagValue)
+		case "in":
+			err = compareIn(value, tagValue)
+		}
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errs
+}
+
+func compareIn(value reflect.Value, expectedValues string) error {
+	expValuesList := strings.Split(expectedValues, ",")
+	err := ErrIn
+
+	for _, expValue := range expValuesList {
+		switch value.Kind() { //nolint:exhaustive
+		case reflect.Int:
+			expValueInt, errInner := strconv.Atoi(expValue)
+			if errInner != nil {
+				err = errInner
+			}
+			if expValueInt == int(value.Int()) {
+				err = nil
+				break
+			}
+
+		case reflect.String:
+			if expValue == value.String() {
+				err = nil
+				break
+			}
+		default:
+			continue
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func compareLen(value reflect.Value, limit string) error {
+	if value.Kind() != reflect.String {
+		return ErrMissmatchTagAndType
+	}
+	limV, err := strconv.Atoi(limit)
+	if err != nil {
+		return err
+	}
+	if len(value.String()) > limV {
+		return ErrLen
+	}
+	return nil
+}
+
+func compareRegExp(value reflect.Value, template string) error {
+	if value.Kind() != reflect.String {
+		return ErrMissmatchTagAndType
+	}
+	rx, err := regexp.Compile(template)
+	if err != nil {
+		return err
+	}
+	if !rx.MatchString(value.String()) {
+		return ErrRegex
+	}
+	return nil
+}
+
+func compareInt(value reflect.Value, limit, operator string) error {
+	if value.Kind() != reflect.Int {
+		return ErrMissmatchTagAndType
+	}
+	limV, err := strconv.Atoi(limit)
+	if err != nil {
+		return err
+	}
+	tagValue := int(value.Int())
+	switch operator {
+	case "min":
+		if tagValue < limV {
+			return ErrMin
+		}
+	case "max":
+		if tagValue > limV {
+			return ErrMax
+		}
+	default:
+		return ErrBrokenTag
+	}
 	return nil
 }
