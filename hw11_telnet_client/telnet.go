@@ -21,41 +21,29 @@ type telnetClient struct {
 	address    string
 }
 
-func (c telnetClient) Close() error {
+func (c *telnetClient) Close() error {
 	err := c.connection.Close()
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-func (c telnetClient) Send() error {
+func (c *telnetClient) Send() error {
 	_, err := io.Copy(c.connection, c.in)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-func (c telnetClient) Receive() error {
+func (c *telnetClient) Receive() error {
 	_, err := io.Copy(c.out, c.connection)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-func (c telnetClient) Connect() error {
+func (c *telnetClient) Connect() error {
 	conn, err := net.DialTimeout("tcp", c.address, c.timeout)
-	if err != nil {
-		return err
-	}
 	c.connection = conn
-	return nil
+	return err
 }
 
 func NewTelnetClient(address string, timeout time.Duration, in io.ReadCloser, out io.Writer) TelnetClient {
-	return telnetClient{
+	return &telnetClient{
 		connection: nil,
 		in:         in,
 		out:        out,

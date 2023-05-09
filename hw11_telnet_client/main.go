@@ -14,21 +14,16 @@ import (
 
 var (
 	timeout               time.Duration
-	defaultTimeout        time.Duration = time.Second * 10
-	ErrWrongArgumentCount               = errors.New("wrong arguments count")
-	ErrCantConnect                      = errors.New("cannot connect to telnet")
+	ErrWrongArgumentCount = errors.New("wrong arguments count")
+	ErrCantConnect        = errors.New("cannot connect to telnet")
 )
 
-func init() {
-	flag.DurationVar(&timeout, "timeout", defaultTimeout, "timeout duration")
-}
-
 func main() {
+	flag.DurationVar(&timeout, "timeout", 10, "timeout duration")
 	flag.Parse()
-	flag.DurationVar(&timeout, "timeout", defaultTimeout, "timeout duration")
 
 	if flag.NArg() != 2 {
-		os.Exit(1)
+		log.Panic(ErrWrongArgumentCount)
 	}
 
 	client := NewTelnetClient(net.JoinHostPort(flag.Arg(0), flag.Arg(1)), timeout, os.Stdin, os.Stdout)
