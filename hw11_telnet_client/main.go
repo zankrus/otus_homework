@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"log"
@@ -22,39 +23,36 @@ func init() {
 	flag.DurationVar(&timeout, "timeout", defaultTimeout, "timeout duration")
 }
 
-func handleReceiver(errs chan<- error, client TelnetClient) {
-	errs <- client.Receive()
-}
-
-func handleSender(errs chan<- error, client TelnetClient) {
-	errs <- client.Send()
-}
-
 func main() {
 	flag.Parse()
+	flag.DurationVar(&timeout, "timeout", defaultTimeout, "timeout duration")
 
-	length := len(os.Args)
-
-	if length != 3 && length != 4 {
-		log.Panic(ErrWrongArgumentCount)
+	if flag.NArg() != 2 {
+		os.Exit(1)
 	}
 
-	host, port := os.Args[length-2], os.Args[length-1]
-
-	client := NewTelnetClient(net.JoinHostPort(host, port), timeout, os.Stdin, os.Stdout)
+	client := NewTelnetClient(net.JoinHostPort(flag.Arg(0), flag.Arg(1)), timeout, os.Stdin, os.Stdout)
 	if err := client.Connect(); err != nil {
 		log.Panic(ErrCantConnect)
 	}
 	defer client.Close()
 
-	errsCh := make(chan error)
-	signCh := make(chan os.Signal, 1)
-	defer signal.Stop(signCh)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT)
+	go func() {
+		defer cancel()
+		err := client.Receive()
+		if err != nil {
+			return
+		}
+	}()
 
-	signal.Notify(signCh, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	go func() {
+		defer cancel()
+		err := client.Send()
+		if err != nil {
+			return
+		}
+	}()
 
-	go handleReceiver(errsCh, client)
-	go handleSender(errsCh, client)
-
-	<-signCh
+	<-ctx.Done()
 }
